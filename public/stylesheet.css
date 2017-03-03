@@ -1,0 +1,79 @@
+html, body {
+  margin:0;
+  padding:0;
+  background-color: yellow;
+}
+h1 {
+  display:block;
+  margin:0;
+  padding: 20px;
+  background-color: green;
+  height:50px;
+}
+
+#viz-container{
+  position:absolute;
+  top: 100px;
+  bottom:10px;
+  left: 10px;
+  right:10px;
+  background-color:white;
+  padding:0;
+  overflow:scroll;
+}
+
+#viz {
+  position:relative;
+  height:100%;
+  width:100%;
+}
+
+#viz-edges {
+  position:absolute;
+  height:100%;
+  width:100%;
+  z-index:1;
+}
+
+.layer {
+  border:1px dotted black;
+  margin:10px;
+  margin-bottom:100px;
+  padding:10px;
+  position:relative;
+  height: 40px;
+  z-index:0;
+}
+
+#viz .pod {
+  background-color:black;
+  color:white;
+}
+
+#viz .replication {
+  background-color:purple;
+  color:yellow;
+}
+
+#viz .service {
+  background-color: blue;
+  color:yellow;
+}
+
+#viz .deployment {
+  background-color: gold;
+  color:yellow;
+}
+
+#viz .deployment,
+#viz .pod,
+#viz .replication,
+#viz .service 
+{
+  height:20px;
+  display: inline-block;
+  padding:10px;
+  border-radius: 10px;
+  z-index:2;
+  position: absolute;
+}
