@@ -25,12 +25,38 @@ function hasChanged(newHtml) {
   }
 }
 
+function focusOnThing(kind, uid) {
+  console.log(kind, uid);
+  switch(kind) {
+    case "pod": focusPod(uid); break;
+  }
+  console.log("displaying info of ", kind, "not handled");
+}
+
+function focusPod(uid) {
+  var pod = info.pods.find(function(pod) { return pod["uid"] == uid });
+  var html = "<h2>Pod details</h2>";
+  html += "<p><b>Name</b>:" +pod.name+"</p>";
+  html += "<p><button onclick='deletePod(\"" + pod.name+ "\")'+>Delete</button>";
+  $("#sidebar").html(html);
+}
+
+function deletePod(name) {
+  $("#sidebar").html("Deleted pod " + name);
+  $.post("/delete_pod", { name: name})
+}
+
+var info = {};
+
 function completeRedraw() {
-  console.log("tick");
   $.get("/graph.svg", function(data) {
     var svg = $(data.documentElement)
 
     if (hasChanged(svg.html())) {
+      $.getJSON("/graph.json", function(graph_info) {
+        info = graph_info;
+      });
+
       var oldZoomerProps = null;
       if (zoomer) {
         oldZoomerProps = {
@@ -47,6 +73,34 @@ function completeRedraw() {
         controlIconsEnabled: true,
         fit: true,
         center: true,
+        customEventsHandler: {
+          init: function(options){
+            function updateSvgClassName(){
+              options.svgElement.setAttribute('class', '' + (svgActive ? 'active':'') + (svgHovered ? ' hovered':''))
+            }
+
+            this.listeners = {
+              click: function(e){
+                var node = $(e.target).closest(".node")[0];
+                if (node != null) {
+                  var parts = node.id.split(/_(.*)/);
+                  var kind = parts[0];
+                  var id = parts[1].replace(/_/g, "-");
+                  focusOnThing(kind,id);
+                }
+              }
+            };
+
+            for (var eventName in this.listeners){
+              options.svgElement.addEventListener(eventName, this.listeners[eventName])
+            }
+          },
+          destroy: function(options){
+            for (var eventName in this.listeners){
+              options.svgElement.removeEventListener(eventName, this.listeners[eventName])
+            }
+          }
+        }
       });
 
       if (oldZoomerProps != null) {

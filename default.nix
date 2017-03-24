@@ -9,5 +9,5 @@ let
   };
 in stdenv.mkDerivation {
    name = "k8s-viz";
-   buildInputs = [env ruby graphviz];
+   buildInputs = [env ruby graphviz kubernetes];
 }

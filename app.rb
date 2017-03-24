@@ -46,33 +46,42 @@ end
 class Pod
   include Matchable
 
-  attr_reader :id, :name, :labels
+  attr_reader :uid, :id, :name, :labels
 
-  def initialize(api, id)
-    @id = "pod_#{id}"
+  def initialize(api)
+    @uid = api["metadata"]["uid"]
+    @id = "pod_#{@uid.gsub("-","_")}"
     @name = api["metadata"]["name"]
     @labels = api["metadata"]["labels"]
   end
 
   def to_dot
-    "#{@id} [label=\"#{@name}\", shape=rect];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect];"
   end
 
+  def to_h
+    {
+      uid: @uid,
+      name: name,
+      labels: labels,
+    }
+  end
 end
 
 class ReplicaSet
   include Matchable
-  attr_reader :id, :name, :selector
+  attr_reader :uid, :id, :name, :selector
 
-  def initialize(api, id)
-    @id = "replica_set_#{id}"
+  def initialize(api)
+    @uid = api["metadata"]["uid"]
+    @id = "replicaset_#{@uid.gsub("-","_")}"
     @name = api["metadata"]["name"]
     @labels = api["metadata"]["labels"]
     @selector = api["spec"]["selector"]
   end
 
   def nodes_to_dot
-    "#{@id} [label=\"#{@name}\", shape=rect, style=filled, fillcolor=red];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=red];"
   end
 
   def edges_to_dot(pods:)
@@ -87,22 +96,33 @@ class ReplicaSet
 
   def to_dot(pods:)
     nodes_to_dot + edges_to_dot(pods:pods)
+  end
+
+  def to_h(pods:)
+    child_pods = pods.select { |pod| pod.matches?(self.selector["matchLabels"]) }
+    {
+      uid: @uid,
+      pods: child_pods.map(&:to_h),
+      labels: @labels,
+      selector: @selector
+    }
   end
 end
 
 class StatefulSet
   include Matchable
-  attr_reader :id, :name, :selector
+  attr_reader :uid, :id, :name, :selector
 
-  def initialize(api, id)
-    @id = "statefulset#{id}"
+  def initialize(api)
+    @uid = api["metadata"]["uid"]
+    @id = "statefulset_#{@uid.gsub("-","_")}"
     @name = api["metadata"]["name"]
     @labels = api["metadata"]["labels"]
     @selector = api["spec"]["selector"]
   end
 
   def nodes_to_dot
-    "#{@id} [label=\"#{@name}\", shape=rect, style=filled, fillcolor=orange,tooltip=\"statefulset\"];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=orange,tooltip=\"statefulset\"];"
   end
 
   def edges_to_dot(pods:)
@@ -118,21 +138,32 @@ class StatefulSet
   def to_dot(pods:)
     nodes_to_dot + edges_to_dot(pods:pods)
   end
+
+  def to_h(pods:)
+    child_pods = pods.select { |pod| pod.matches?(self.selector["matchLabels"]) }
+    {
+      uid: @uid,
+      pods: child_pods.map(&:to_h),
+      labels: @labels,
+      selector: @selector
+    }
+  end
 end
 
 class ReplicationController
   include Matchable
-  attr_reader :id, :name, :selector
+  attr_reader :uid, :id, :name, :selector
 
-  def initialize(api, id)
-    @id = "replication_controller#{id}"
+  def initialize(api)
+    @uid = api["metadata"]["uid"]
+    @id = "replication_controller_#{@uid}"
     @name = api["metadata"]["name"]
     @labels = api["metadata"]["labels"]
     @selector = api["spec"]["selector"]
   end
 
   def nodes_to_dot
-    "#{@id} [label=\"#{@name}\", shape=rect, style=filled, fillcolor=red];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=red];"
   end
 
   def edges_to_dot(pods:)
@@ -148,20 +179,31 @@ class ReplicationController
   def to_dot(pods:)
     nodes_to_dot + edges_to_dot(pods:pods)
   end
+
+  def to_h(pods:)
+    child_pods = pods.select { |pod| pod.matches?(self.selector) }
+    {
+      uid: @uid,
+      pods: child_pods.map(&:to_h),
+      labels: @labels,
+      selector: @selector
+    }
+  end
 end
 
 class Service
   attr_reader :id, :name, :selector
 
-  def initialize(api, id)
-    @id = "service#{id}"
+  def initialize(api)
+    @uid = api["metadata"]["uid"]
+    @id = "service_#{@uid.gsub("-","_")}"
     @name = api["metadata"]["name"]
     @labels = api["metadata"]["labels"]
     @selector = api["spec"]["selector"]
   end
 
   def nodes_to_dot
-    "#{@id} [label=\"#{@name}\", shape=rect, style=filled, fillcolor=green];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=green];"
   end
 
   def edges_to_dot(pods:)
@@ -178,20 +220,34 @@ class Service
   def to_dot(pods:)
     nodes_to_dot + edges_to_dot(pods:pods)
   end
+
+  def to_h(pods:)
+    child_pods = if self.selector.nil? 
+                 then [] 
+                 else pods.select { |pod| pod.matches?(self.selector) }
+                 end
+    {
+      uid: @uid,
+      pods: child_pods.map(&:to_h),
+      labels: @labels,
+      selector: @selector
+    }
+  end
 end
 
 class Deployment
   attr_reader :id, :name, :selector
 
-  def initialize(api, id)
-    @id = "deployment#{id}"
+  def initialize(api)
+    @uid = api["metadata"]["uid"]
+    @id = "deployment_#{@uid.gsub("-","_")}"
     @name = api["metadata"]["name"]
     @labels = api["metadata"]["labels"]
     @selector = api["spec"]["selector"]
   end
 
   def nodes_to_dot
-    "#{@id} [label=\"#{@name}\", shape=rect, style=filled, fillcolor=yellow];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=yellow];"
   end
 
   def edges_to_dot(replica_sets)
@@ -207,6 +263,16 @@ class Deployment
   def to_dot(replica_sets:)
     nodes_to_dot + edges_to_dot(replica_sets)
   end
+
+  def to_h(replica_sets:)
+    child_sets = replica_sets.select { |rs| rs.matches?(self.selector["matchLabels"]) }
+    {
+      uid: @uid,
+      child_sets_uids: child_sets.map { |set| set.uid },
+      labels: @labels,
+      selector: @selector
+    }
+  end
 end
 
 class Model
@@ -219,12 +285,12 @@ class Model
     deployments = request_api("/apis/extensions/v1beta1/namespaces/"+$namespace+"/deployments")["items"] || []
 
 
-    pods = pods.each_with_index.map {|x,i| Pod.new x, i }
-    rsets = rsets.each_with_index.map {|x,i| ReplicaSet.new x, i }
-    rcs = rcs.each_with_index.map {|x,i| ReplicationController.new x, i }
-    svcs = svcs.each_with_index.map {|x,i| Service.new x, i }
-    statefulsets = statefulsets.each_with_index.map {|x,i| StatefulSet.new x, i }
-    deployments = deployments.each_with_index.map {|x,i| Deployment.new x,i  }
+    pods = pods.each_with_index.map {|x,i| Pod.new x }
+    rsets = rsets.each_with_index.map {|x,i| ReplicaSet.new x }
+    rcs = rcs.each_with_index.map {|x,i| ReplicationController.new x}
+    svcs = svcs.each_with_index.map {|x,i| Service.new x }
+    statefulsets = statefulsets.each_with_index.map {|x,i| StatefulSet.new x }
+    deployments = deployments.each_with_index.map {|x,i| Deployment.new x }
 
     Model.new(pods: pods,
       replication_controllers: rcs,
@@ -258,6 +324,18 @@ class Model
     lines.join("\n")
   end
 
+  def to_json
+    result = {
+      pods: @pods.map { |pod| pod.to_h },
+      replication_controllers: @replication_controllers.map {|rc| lines.push rc.to_h(pods: @pods) },
+      replica_sets: @replica_sets.map {|rs| rs.to_h(pods: @pods) },
+      services: @services.map {|s| s.to_h(pods: @pods) },
+      deployments: @deployments.map {|d| d.to_h(replica_sets: @replica_sets) },
+      statefulsets: @statefulsets.map {|sfs| sfs.to_h(pods: @pods) }
+    }
+    JSON.pretty_generate(result)
+  end
+
   def to_svg
     stdout, stderr, status = Open3.capture3("dot -Tsvg", stdin_data: self.to_dot)
     if status.success?
@@ -286,5 +364,15 @@ class K8sViz < Sinatra::Base
 
   get "/graph.dot" do
     Model.fetch.to_dot
+  end
+
+  get "/graph.json" do
+    Model.fetch.to_json
+  end
+
+  post "/delete_pod" do
+    system("kubectl delete pod #{params["name"]}")
+
+    "ok"
   end
 end
