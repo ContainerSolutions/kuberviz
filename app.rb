@@ -212,7 +212,7 @@ class Service
     
     lines = []
     child_pods.each do |child_pod|
-      lines.push "#{child_pod.id} -> #{@id};"
+      lines.push "#{child_pod.id} -> #{@id} [tailport=s];"
     end
     lines.join("\n")
   end
@@ -255,7 +255,7 @@ class Deployment
     
     lines = []
     child_sets.each do |child|
-      lines.push "#{@id} -> #{child.id}"
+      lines.push "#{@id} -> #{child.id} [tailport=s];"
     end
     lines.join("\n")
   end
@@ -311,7 +311,8 @@ class Model
   end
 
   def to_dot
-    lines =  ["digraph k8s {"]
+    lines =  ["digraph k8s {", "ranksep=1.2; node[fontsize=15]; "]
+
 
     @pods.each { |pod| lines.push pod.to_dot }
     @replication_controllers.each {|rc| lines.push rc.to_dot(pods: @pods) }
