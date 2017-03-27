@@ -8,6 +8,11 @@ let
     gemset = ./gemset.nix;
   };
 in stdenv.mkDerivation {
-   name = "k8s-viz";
-   buildInputs = [env ruby graphviz kubernetes];
+  name = "k8s-viz";
+  propagatedBuildInputs = [env ruby graphviz kubernetes];
+  src = ./.;
+  buildCommand = ''
+    mkdir -p $out
+    cp -r ${src} $out
+  '';
 }
