@@ -30,10 +30,22 @@ class Pod
     @id = "pod_#{@uid.gsub("-","_")}"
     @name = api["metadata"]["name"]
     @labels = api["metadata"]["labels"]
+    @phase = api["status"]["phase"]
+  end
+
+
+  def phase_color
+    case @phase
+    when "Pending" then "beige"
+    when "Running" then "palegreen"
+    when "Succeeded" then "palegreen"
+    when "Failed" then "indianred"
+    when "Unknownn" then "silver"
+    end
   end
 
   def to_dot
-    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=#{phase_color}];"
   end
 
   def to_h
@@ -58,7 +70,7 @@ class ReplicaSet
   end
 
   def nodes_to_dot
-    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=red];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=house, style=filled, fillcolor=wheat];"
   end
 
   def edges_to_dot(pods:)
@@ -99,7 +111,7 @@ class StatefulSet
   end
 
   def nodes_to_dot
-    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=orange,tooltip=\"statefulset\"];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=triangle, style=filled, fillcolor=wheat,tooltip=\"statefulset\"];"
   end
 
   def edges_to_dot(pods:)
@@ -140,7 +152,7 @@ class ReplicationController
   end
 
   def nodes_to_dot
-    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=red];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=house, style=filled, fillcolor=red];"
   end
 
   def edges_to_dot(pods:)
@@ -180,7 +192,7 @@ class Service
   end
 
   def nodes_to_dot
-    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=green];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=egg, style=filled, fillcolor=lightpink];"
   end
 
   def edges_to_dot(pods:)
@@ -224,7 +236,7 @@ class Deployment
   end
 
   def nodes_to_dot
-    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=rect, style=filled, fillcolor=yellow];"
+    "#{@id} [id=\"#{@id}\", label=\"#{@name}\", shape=component, style=filled, fillcolor=skyblue];"
   end
 
   def edges_to_dot(replica_sets)
@@ -251,7 +263,6 @@ class Deployment
     }
   end
 end
-
 
 def list_resources kind
   stdout, stderr, status = Open3.capture3("kubectl get -o json #{kind}")

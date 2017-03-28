@@ -28,7 +28,7 @@ spec:
       containers:
       - name: k8s-viz
         image: moretea/k8s-viz:latest
-        imagePullPolicy: Always
+        imagePullPolicy: Never
         ports:
           - name: http-server
             containerPort: 9292

@@ -29,8 +29,30 @@ function focusOnThing(kind, uid) {
   console.log(kind, uid);
   switch(kind) {
     case "pod": focusPod(uid); break;
+    default: console.log("displaying info of ", kind, "not handled");
   }
-  console.log("displaying info of ", kind, "not handled");
+}
+
+function syntaxHighlight(object) {
+    var json = JSON.stringify(object, undefined, 4);
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var result = json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        var cls = 'number';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'key';
+            } else {
+                cls = 'string';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'boolean';
+        } else if (/null/.test(match)) {
+            cls = 'null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+    });
+
+  return "<pre>" + result + "</pre>";
 }
 
 function focusPod(uid) {
@@ -38,6 +60,8 @@ function focusPod(uid) {
   var html = "<h2>Pod details</h2>";
   html += "<p><b>Name</b>:" +pod.name+"</p>";
   html += "<p><button onclick='deletePod(\"" + pod.name+ "\")'+>Delete</button>";
+  html += "<h3>Details</h3>";
+  html += syntaxHighlight(pod);
   $("#sidebar").html(html);
 }
 

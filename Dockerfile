@@ -7,9 +7,9 @@ RUN mkdir -p /app/
 ADD ./Gemfile*  /app/
 WORKDIR /app
 RUN bundle install
+ENTRYPOINT bundle exec rackup -o 0.0.0.0 -p 9292
 
 ADD ./public/ /app/public
 ADD ./views/ /app/views
-ADD ./*.rb /app/
 ADD ./*.ru /app/
-ENTRYPOINT bundle exec rackup -o 0.0.0.0 -p 9292
+ADD ./*.rb /app/
