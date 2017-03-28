@@ -5,9 +5,6 @@
 
 ## Running it
 
-At the moment, only minikube is supported. You need to have `kubectl` in your path.
-Only tested with kubernetes / kubectl 1.5.
-
-1. Start minikube. Make sure that minikube is your current kubectl context.
-2. Install Nix (`curl https://nixos.org/nix/install | sh`, it will only write files to `/nix`, no uninstaller is needed; just kill `/nix`)
-3. Run `./run.sh`
+```
+kubectl apply -f https://raw.githubusercontent.com/ContainerSolutions/kuberviz/master/k8s-viz.yml
+```

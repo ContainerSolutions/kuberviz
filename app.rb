@@ -7,29 +7,6 @@ require "open3"
 
 $namespace = "default"
 
-kubectl_cfg = YAML.load File.read(File.expand_path("~/.kube/config"))
-current_context = kubectl_cfg["current-context"]
-
-raise("erm, nope") if current_context != "minikube"
-
-cluster_conf = kubectl_cfg["clusters"].select { |c| c["name"] == current_context }.first["cluster"]
-$api_server_prefix = cluster_conf["server"]
-$api_server_ca = cluster_conf["certificate-authority"]
-
-TOKEN=`kubectl describe secret $(kubectl get secrets | grep default | cut -f1 -d ' ') | grep -E '^token' | cut -f2 -d':' | tr -d '\\t'`.chomp
-
-def request_api(path)
- uri = URI.parse($api_server_prefix + path)
- req = Net::HTTP::Get.new(uri.path)
- req.add_field("Authorization", "Bearer #{TOKEN}")
- res = Net::HTTP.start(uri.host, uri.port, use_ssl: (uri.scheme == 'https'), ca_file: $api_server_ca) do |http|
-     http.request(req)
- end
- if res.code != "200"
-   raise "got status code #{res.code}"
- end
- return JSON.load(res.body)
-end
 
 module Matchable
   def matches?(selector)
@@ -275,15 +252,28 @@ class Deployment
   end
 end
 
+
+def list_resources kind
+  stdout, stderr, status = Open3.capture3("kubectl get -o json #{kind}")
+
+  if status.exitstatus== 0
+    JSON.load(stdout)["items"]
+  else
+    puts "Failed to list #{kind}"
+    puts stderr
+    puts status.inspect
+    nil
+  end
+end
+
 class Model
   def self.fetch
-    pods = request_api("/api/v1/namespaces/"+$namespace+"/pods")["items"] || []
-    rsets= request_api("/apis/extensions/v1beta1/namespaces/"+$namespace+"/replicasets")["items"] || []
-    rcs = request_api("/api/v1/namespaces/"+$namespace+"/replicationcontrollers")["items"] || []
-    svcs = request_api("/api/v1/namespaces/"+$namespace+"/services")["items"] || []
-    statefulsets = request_api("/apis/apps/v1beta1/namespaces/"+$namespace+"/statefulsets")["items"] || []
-    deployments = request_api("/apis/extensions/v1beta1/namespaces/"+$namespace+"/deployments")["items"] || []
-
+    pods = list_resources("pods") || []
+    rsets = list_resources("replicasets") || []
+    rcs = list_resources("replicationcontrollers") || []
+    svcs = list_resources("services") || []
+    statefulsets = list_resources("statefulsets") || []
+    deployments = list_resources("deployments") || []
 
     pods = pods.each_with_index.map {|x,i| Pod.new x }
     rsets = rsets.each_with_index.map {|x,i| ReplicaSet.new x }
